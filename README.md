@@ -661,8 +661,11 @@ camera-hacklab/
 
 ## Repository
 
-Replace the GitHub placeholder links in this README and in `public/index.html`
-after publishing the repository.
+Project repository:
+
+```text
+https://github.com/anishacharyaca/camera-hacklab
+```
 
 ## License
 
