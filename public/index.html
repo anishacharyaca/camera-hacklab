@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <title>Camera Hacklab</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="startup-checking">
+  <div class="app-shell">
+    <aside id="leftRail" class="left-rail" aria-label="Workspace navigation">
+      <div class="rail-brand">
+        <p class="eyebrow">Camera Hacklab</p>
+        <h1>Camera Dashboard</h1>
+        <p class="rail-copy">Calm control for live monitoring, setup, recordings, and diagnostics.</p>
+      </div>
+      <nav class="rail-nav">
+        <button id="firstSetupNavBtn" class="rail-link" data-workspace-target="firstSetupWorkspace" type="button">Setup</button>
+        <button class="rail-link is-active" data-workspace-target="overviewWorkspace" type="button">Overview</button>
+        <button class="rail-link" data-workspace-target="recordingsWorkspace" type="button">Recordings</button>
+        <button class="rail-link" data-workspace-target="diagnosticsWorkspace" type="button">Diagnostics</button>
+        <button class="rail-link" data-workspace-target="aboutWorkspace" type="button">About</button>
+      </nav>
+      <div class="rail-footer">
+        <div class="status-kicker">Live camera state</div>
+        <div id="statusText" class="rail-status-value">idle</div>
+        <div id="statusMeta" class="rail-status-meta">No stream running</div>
+      </div>
+    </aside>
+
+    <div class="app-main">
+      <section id="startupGate" class="startup-gate" aria-live="polite" aria-busy="true">
+        <div class="startup-card">
+          <div id="startupSpinner" class="startup-spinner" aria-hidden="true"></div>
+          <div class="startup-copy">
+            <p class="eyebrow">Camera connection</p>
+            <h1 id="startupTitle">Looking for your camera</h1>
+            <p id="startupMessage">Checking that this computer can discover the camera. This may take a moment.</p>
+          </div>
+          <button id="startupRetryBtn" class="primary" type="button" hidden>Check again</button>
+        </div>
+      </section>
+
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="navToggleBtn" class="icon-button nav-toggle" type="button" aria-label="Toggle navigation">☰</button>
+          <div>
+            <p class="topbar-label">Camera</p>
+            <h2 id="cameraIdentity">Not configured</h2>
+          </div>
+          <div id="topbarState" class="topbar-state">Idle</div>
+        </div>
+        <div class="topbar-right">
+          <div id="cameraBusy" class="camera-busy" aria-live="polite">
+            <span class="busy-spinner"></span>
+            <span id="cameraBusyText">Camera busy</span>
+          </div>
+          <div class="topbar-actions">
+            <button id="startBtn" class="secondary" type="button">Start preview</button>
+            <button id="stopBtn" class="secondary" type="button">Stop preview</button>
+            <button id="applyBtn" class="primary" type="button">Apply changes</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace-stack">
+        <section id="firstSetupWorkspace" class="workspace onboarding-workspace">
+          <div class="workspace-header onboarding-header">
+            <div>
+              <p class="workspace-kicker">Camera Setup</p>
+              <h3>Setup status and first-time configuration</h3>
+              <p id="onboardingMessage" class="panel-subtitle">Start with the camera powered on and this computer connected to its setup Wi-Fi.</p>
+            </div>
+            <div id="onboardingProgress" class="onboarding-progress">Step 1 of 5</div>
+          </div>
+
+          <div class="onboarding-layout">
+            <aside class="panel onboarding-steps" aria-label="Setup progress">
+              <div class="onboarding-step is-active" data-onboarding-marker="welcome"><span>1</span><div><strong>Prepare</strong><small>Check the host and camera</small></div></div>
+              <div class="onboarding-step" data-onboarding-marker="camera_details"><span>2</span><div><strong>Connect</strong><small>Enter camera identity</small></div></div>
+              <div class="onboarding-step" data-onboarding-marker="wifi"><span>3</span><div><strong>Network</strong><small>Move or keep the Wi-Fi</small></div></div>
+              <div class="onboarding-step" data-onboarding-marker="reconnect"><span>4</span><div><strong>Verify</strong><small>Find the camera again</small></div></div>
+              <div class="onboarding-step" data-onboarding-marker="camera_settings"><span>5</span><div><strong>Finish</strong><small>Time and recording policy</small></div></div>
+            </aside>
+
+            <div class="onboarding-panels">
+              <section class="panel onboarding-panel" data-onboarding-panel="welcome">
+                <p class="setup-kicker">Before you begin</p>
+                <h2>Prepare the camera host</h2>
+                <p>The Node server is running. Keep this page open on the same computer. For a factory-reset camera, connect Linux to the camera's <strong>AYSA-...</strong> Wi-Fi before continuing.</p>
+                <div class="onboarding-checks">
+                  <div><span>1</span><p><strong>Camera powered on</strong><small>Reset it if its setup Wi-Fi is not visible.</small></p></div>
+                  <div><span>2</span><p><strong>Camera Hacklab host connected</strong><small>Use a second adapter if you need to keep normal internet.</small></p></div>
+                  <div><span>3</span><p><strong>Private network ready</strong><small>Our recommended target is an isolated 2.4 GHz hotspot with local NTP.</small></p></div>
+                </div>
+                <div class="panel-actions">
+                  <button id="onboardingDiscoverBtn" class="primary" type="button">Find connected camera</button>
+                  <button id="onboardingBeginBtn" class="secondary" type="button">Enter camera manually</button>
+                </div>
+              </section>
+
+              <section class="panel onboarding-panel" data-onboarding-panel="camera_details" hidden>
+                <p class="setup-kicker">Camera identity</p>
+                <h2>Connect to the camera</h2>
+                <p>Use the DID printed on the camera or shown by its setup Wi-Fi. The common factory login is <code>admin</code> with password <code>6666</code>.</p>
+                <form id="onboardingCameraForm" class="form-grid onboarding-form">
+                  <label>Camera DID<input name="did" required placeholder="AYSA-..."></label>
+                  <label>Username<input name="user" required value="admin"></label>
+                  <label>Password<input name="pwd" type="password" autocomplete="current-password" placeholder="Camera password"></label>
+                  <label>Timezone<input name="timezone" value="America/Toronto" placeholder="America/Toronto"></label>
+                  <label>Local NTP server<input name="ntpServer" value="192.168.50.1" placeholder="192.168.50.1"></label>
+                  <label>Use local NTP
+                    <select name="ntpSwitch"><option value="1">Yes</option><option value="0">No</option></select>
+                  </label>
+                </form>
+                <div class="onboarding-note">Nothing is applied yet. This step only checks that the native bridge can authenticate and read the camera.</div>
+                <div class="panel-actions"><button id="onboardingConnectBtn" class="primary" type="button">Connect to camera</button></div>
+              </section>
+
+              <section class="panel onboarding-panel" data-onboarding-panel="network_choice" hidden>
+                <p class="setup-kicker">Camera found</p>
+                <h2>How should this camera connect?</h2>
+                <p>The camera is reachable on its own hotspot. Both options work with Camera Hacklab.</p>
+                <div class="connection-choice-grid">
+                  <button id="onboardingKeepHotspotBtn" class="connection-choice" type="button">
+                    <strong>Keep camera hotspot</strong>
+                    <span>Continue using the AYSA Wi-Fi. This computer must connect to that hotspot whenever you use the dashboard.</span>
+                  </button>
+                  <button id="onboardingChooseWifiBtn" class="connection-choice recommended" type="button">
+                    <strong>Move camera to Wi-Fi</strong>
+                    <span>Give the camera credentials for a private 2.4 GHz network, then connect this computer to the same network.</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="panel onboarding-panel" data-onboarding-panel="wifi" hidden>
+                <p class="setup-kicker">Camera network</p>
+                <h2>Choose where the camera will live</h2>
+                <p>Move the camera from its factory hotspot to a private 2.4 GHz Wi-Fi network, or keep its current network if it is already configured.</p>
+                <div class="panel-actions onboarding-inline-actions">
+                  <button id="onboardingWifiScanBtn" class="secondary" type="button">Scan from camera</button>
+                  <button id="onboardingWifiSkipBtn" class="secondary" type="button">Keep current network</button>
+                </div>
+                <form id="onboardingWifiForm" class="form-grid onboarding-form">
+                  <label>Wi-Fi name
+                    <input name="ssid" list="onboardingWifiList" placeholder="Private 2.4 GHz SSID">
+                    <datalist id="onboardingWifiList"></datalist>
+                  </label>
+                  <label>Wi-Fi password<input name="password" type="password" autocomplete="new-password"></label>
+                  <label>Firmware encryption code
+                    <input name="encryption" type="number" value="0" step="1">
+                  </label>
+                </form>
+                <div class="onboarding-warning"><strong>This changes the camera network.</strong> After handoff, the camera hotspot may disappear. Keep this page open and connect Linux to the target Wi-Fi.</div>
+                <div class="panel-actions"><button id="onboardingWifiApplyBtn" class="primary" type="button">Send Wi-Fi to camera</button></div>
+              </section>
+
+              <section class="panel onboarding-panel" data-onboarding-panel="reconnect" hidden>
+                <p class="setup-kicker">Reconnect and verify</p>
+                <h2>Put this computer on the camera network</h2>
+                <p id="onboardingReconnectText">Wait up to two minutes for the camera to join. Connect this computer to the same network, then verify the native control path and SD card.</p>
+                <div id="onboardingActiveNetworks" class="active-network-list">Checking active Wi-Fi adapters…</div>
+                <div class="onboarding-checks">
+                  <div><span>1</span><p><strong>Join the target Wi-Fi</strong><small>The browser can stay open when using localhost.</small></p></div>
+                  <div><span>2</span><p><strong>Wait for camera startup</strong><small>Cheap cameras can take one or two minutes.</small></p></div>
+                  <div><span>3</span><p><strong>Verify below</strong><small>A failed check does not erase your entered settings.</small></p></div>
+                </div>
+                <div class="panel-actions">
+                  <button id="onboardingBackWifiBtn" class="secondary" type="button">Back to network</button>
+                  <button id="onboardingVerifyBtn" class="primary" type="button">Retry camera connection</button>
+                </div>
+              </section>
+
+              <section class="panel onboarding-panel" data-onboarding-panel="camera_settings" hidden>
+                <p class="setup-kicker">Initial camera policy</p>
+                <h2>Apply the known-good local setup</h2>
+                <p>These defaults match our current isolated-camera setup: Toronto time, local NTP, night vision off, continuous recording, sound on, no sleep, and HD preview.</p>
+                <form id="onboardingSettingsForm" class="form-grid onboarding-form">
+                  <label>Preview quality
+                    <select name="quality"><option value="hd">HD / stream 2</option><option value="fhd">FHD / stream 1</option></select>
+                  </label>
+                  <label>Video resolution
+                    <select name="videoResolution"><option value="3">High</option><option value="2">Medium</option><option value="1">Low</option></select>
+                  </label>
+                  <label>Night vision
+                    <select name="nightVisionMode"><option value="0">Off</option><option value="2">Auto</option><option value="1">On</option><option value="3">Auto color</option></select>
+                  </label>
+                  <label>Recording
+                    <select name="recordVideo"><option value="1">Enabled</option><option value="0">Disabled</option></select>
+                  </label>
+                  <label>Recording mode
+                    <select name="recordMode"><option value="full_day">Full day</option><option value="alarm">Alarm only</option><option value="timed">Timed</option><option value="privacy">Privacy</option></select>
+                  </label>
+                  <label>Record sound
+                    <select name="recordSound"><option value="1">On</option><option value="0">Off</option></select>
+                  </label>
+                  <label>Overwrite old clips
+                    <select name="loopCoverage"><option value="0">Off</option><option value="1">On</option></select>
+                  </label>
+                  <label>Continuous clip minutes<input name="sdCardRecordingDurationMinutes" type="number" min="1" value="10"></label>
+                  <label>Sleep behavior
+                    <select name="wakeupMode"><option value="0">Never sleep</option><option value="1">Timed wake</option><option value="2">Alarm wake</option></select>
+                  </label>
+                  <label>Low-power mode
+                    <select name="lowPowerMode"><option value="2">Closed / disabled</option><option value="0">Automatic</option><option value="1">Open / enabled</option></select>
+                  </label>
+                </form>
+                <div class="onboarding-note">Finish will synchronize time, configure local NTP, apply these camera settings, save the local configuration, and unlock the dashboard.</div>
+                <div class="panel-actions"><button id="onboardingCompleteBtn" class="primary" type="button">Apply and finish setup</button></div>
+              </section>
+
+              <section class="panel onboarding-panel onboarding-complete-panel" data-onboarding-panel="complete" hidden>
+                <p class="setup-kicker">Current setup state</p>
+                <h2>Camera is already set up</h2>
+                <p id="onboardingConnectionSummary">Camera credentials, network access, time settings, recording policy, and local dashboard configuration are saved.</p>
+                <div class="panel-actions">
+                  <button id="onboardingSetupWifiLaterBtn" class="secondary" type="button">Set up camera Wi-Fi</button>
+                  <button id="onboardingOpenDashboardBtn" class="primary" type="button">Back to Overview</button>
+                </div>
+              </section>
+
+              <div id="onboardingStatus" class="onboarding-status" aria-live="polite"></div>
+            </div>
+          </div>
+          <div id="cameraSetupMount" class="camera-setup-mount"></div>
+        </section>
+
+        <section id="overviewWorkspace" class="workspace is-active">
+          <div class="workspace-header">
+            <div>
+              <p class="workspace-kicker">Overview</p>
+              <h3>Live monitoring and camera controls</h3>
+            </div>
+          </div>
+
+          <div class="overview-hero">
+            <section id="previewPanel" class="panel preview-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Live Preview</h2>
+                  <p class="panel-subtitle">Use the pinned controls above to start or stop the HD stream.</p>
+                </div>
+              </div>
+              <div class="preview-frame">
+                <img id="streamImg" alt="Live camera stream">
+                <div id="previewEmpty" class="preview-empty">Start the preview to load the live camera stream.</div>
+              </div>
+            </section>
+
+            <section class="panel health-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Camera Health</h2>
+                  <p class="panel-subtitle">Connection state, setup readiness, and current stream summary.</p>
+                </div>
+              </div>
+              <div class="health-grid">
+                <div class="health-item">
+                  <span>Connection</span>
+                  <strong id="overviewConnectionState">Idle</strong>
+                </div>
+                <div class="health-item">
+                  <span>Setup</span>
+                  <strong id="overviewSetupState">Checking</strong>
+                </div>
+                <div class="health-item">
+                  <span>Timezone</span>
+                  <strong id="setupTimezone">America/Toronto</strong>
+                </div>
+                <div class="health-item">
+                  <span>Stream</span>
+                  <strong id="overviewStreamState">HD / 2</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel pending-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Pending Changes</h2>
+                  <p class="panel-subtitle">Apply only when your edited fields differ from the live camera values.</p>
+                </div>
+              </div>
+              <div id="controlsPendingBadge" class="controls-pending-badge">No pending changes</div>
+              <div id="pendingSummary" class="pending-summary">All editable options already match the applied camera settings.</div>
+              <div id="applyStatus" class="apply-status">No changes applied yet.</div>
+            </section>
+          </div>
+
+          <section id="setupPanel" class="panel setup-panel setup-hidden">
+            <div class="panel-head">
+              <div>
+                <h2>Camera Setup</h2>
+                <p class="panel-subtitle">First-run setup is surfaced here when the camera time or core defaults need attention.</p>
+              </div>
+              <div class="panel-actions">
+                <button id="setupRefreshBtn" class="secondary" type="button">Refresh check</button>
+              </div>
+            </div>
+            <div class="setup-callout">
+              <div class="setup-copy">
+                <div class="setup-kicker">Setup attention</div>
+                <h3 id="setupHeadline">Checking camera time…</h3>
+                <p id="setupSummary" class="setup-summary">The dashboard will decide whether this camera still needs its first local setup.</p>
+              </div>
+              <div class="setup-actions">
+                <button id="setupOpenBtn" class="primary" type="button">Open setup options</button>
+              </div>
+            </div>
+            <form id="setupForm" class="setup-form setup-form-hidden">
+              <label class="checkbox">
+                <input name="syncTimeNow" type="checkbox" checked>
+                Set date and time to current Toronto time
+              </label>
+              <label class="checkbox">
+                <input name="disableNightVision" type="checkbox" checked>
+                Disable night vision
+              </label>
+              <label class="checkbox">
+                <input name="disableRecording" type="checkbox">
+                Turn recording off
+              </label>
+              <label class="checkbox">
+                <input name="turnOffSleep" type="checkbox">
+                Turn off sleep mode
+              </label>
+              <label>
+                Quality during setup
+                <select name="quality">
+                  <option value="fhd">fhd</option>
+                  <option value="hd" selected>hd</option>
+                  <option value="">custom stream</option>
+                </select>
+              </label>
+              <label>
+                Video resolution
+                <select name="videoResolution">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3" selected>3</option>
+                </select>
+              </label>
+              <label>
+                Clock display
+                <select name="timeHour">
+                  <option value="0" selected>12 hour</option>
+                  <option value="1">24 hour</option>
+                </select>
+              </label>
+              <label>
+                Low power mode
+                <select name="lowPowerMode">
+                  <option value="0">0 auto</option>
+                  <option value="1">1 open</option>
+                  <option value="2" selected>2 close</option>
+                </select>
+              </label>
+              <label>
+                Stream ID
+                <input name="stream" type="number" min="0" step="1" value="2">
+              </label>
+            </form>
+            <div class="panel-actions setup-bottom setup-form-hidden" id="setupBottomActions">
+              <button id="setupApplyBtn" class="primary" type="button">Apply setup</button>
+            </div>
+            <div id="setupApplyStatus" class="apply-status setup-form-hidden">Preview will stay live while setup changes are applied.</div>
+          </section>
+
+          <div class="overview-columns">
+            <section class="panel current-values-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Current State</h2>
+                  <p class="panel-subtitle">Read-only values currently applied on the camera.</p>
+                </div>
+              </div>
+              <div id="controlsAppliedSummary" class="config-summary">
+                <div class="config-summary-empty">Waiting for camera configuration.</div>
+              </div>
+            </section>
+
+            <section id="controlsPanel" class="panel controls-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Edit Settings</h2>
+                  <p class="panel-subtitle">Edited fields are marked inline when they differ from the applied values.</p>
+                </div>
+              </div>
+              <form id="configForm" class="form-grid">
+                <label>
+                  DID
+                  <input name="did" placeholder="AYSA-...">
+                </label>
+                <label>
+                  User
+                  <input name="user" value="admin">
+                </label>
+                <label>
+                  Password
+                  <input name="pwd" type="password" placeholder="Camera password">
+                </label>
+                <label>
+                  Quality
+                  <select name="quality">
+                    <option value="fhd">fhd</option>
+                    <option value="hd" selected>hd</option>
+                    <option value="">custom stream</option>
+                  </select>
+                </label>
+                <label>
+                  Stream ID
+                  <input name="stream" type="number" min="0" step="1" value="2">
+                </label>
+                <label>
+                  Video resolution
+                  <select name="videoResolution">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                  </select>
+                </label>
+                <label>
+                  Clock display
+                  <select name="timeHour">
+                    <option value="0" selected>12 hour</option>
+                    <option value="1">24 hour</option>
+                  </select>
+                </label>
+                <label>
+                  Night vision
+                  <select name="nightVisionMode">
+                    <option value="0" selected>0 off</option>
+                    <option value="1">1 on</option>
+                    <option value="2">2 auto</option>
+                    <option value="3">3 auto color</option>
+                  </select>
+                </label>
+                <label>
+                  Recording
+                  <select name="recordVideo">
+                    <option value="0">0 off</option>
+                    <option value="1" selected>1 on</option>
+                  </select>
+                </label>
+                <label>
+                  Recording mode
+                  <select name="recordMode">
+                    <option value="privacy">Privacy Mode</option>
+                    <option value="full_day" selected>Full Day Recording</option>
+                    <option value="alarm">Alarm Recording</option>
+                    <option value="timed">Timed Recording</option>
+                  </select>
+                </label>
+                <label>
+                  Record sound
+                  <select name="recordSound">
+                    <option value="0">0 off</option>
+                    <option value="1" selected>1 on</option>
+                  </select>
+                </label>
+                <label>
+                  Wake-up sound
+                  <select name="recordSoundDuringWakeUpPeriod">
+                    <option value="0" selected>0 off</option>
+                    <option value="1">1 on</option>
+                  </select>
+                </label>
+                <label>
+                  Loop coverage
+                  <select name="loopCoverage">
+                    <option value="0" selected>0 off</option>
+                    <option value="1">1 on</option>
+                  </select>
+                </label>
+                <label>
+                  SD recording duration (min)
+                  <input name="sdCardRecordingDurationMinutes" type="number" min="1" step="1" value="10">
+                </label>
+                <label>
+                  Alarm recording duration (s)
+                  <input name="alarmRecordingDurationSeconds" type="number" min="1" step="1" value="6">
+                </label>
+                <label>
+                  Alarm recording interval (s)
+                  <input name="alarmRecordingIntervalSeconds" type="number" min="1" step="1" value="30">
+                </label>
+                <label>
+                  Wake up mode
+                  <select name="wakeupMode">
+                    <option value="0" selected>0 turn off sleep</option>
+                    <option value="1">1 timed wake up</option>
+                    <option value="2">2 alarm wake up</option>
+                  </select>
+                </label>
+                <label>
+                  Timed recording start
+                  <input name="timedRecordStart" type="time" value="00:00">
+                </label>
+                <label>
+                  Timed recording end
+                  <input name="timedRecordEnd" type="time" value="23:59">
+                </label>
+                <label>
+                  Timed recording days
+                  <input name="timedRecordDays" pattern="[01]{7}" inputmode="numeric" value="1111111">
+                </label>
+                <label>
+                  Timed recording enabled
+                  <select name="timedRecordEnable">
+                    <option value="0">0 off</option>
+                    <option value="1" selected>1 on</option>
+                  </select>
+                </label>
+                <label>
+                  Low power mode
+                  <select name="lowPowerMode">
+                    <option value="0">0 auto</option>
+                    <option value="1">1 open</option>
+                    <option value="2" selected>2 close</option>
+                  </select>
+                </label>
+                <label>
+                  I-frame interval
+                  <input name="iframeInterval" type="number" step="0.5" min="0" value="1">
+                </label>
+                <label>
+                  Gap I-frame threshold
+                  <input name="gapIframeThreshold" type="number" step="1" min="1" value="20">
+                </label>
+                <label>
+                  Set-param delay
+                  <input name="setParamDelay" type="number" step="0.1" min="0" value="1">
+                </label>
+                <label>
+                  Read chunk
+                  <input name="readChunk" type="number" min="1024" step="1024" value="65536">
+                </label>
+                <label>
+                  Max read chunk
+                  <input name="maxReadChunk" type="number" min="65536" step="65536" value="2097152">
+                </label>
+                <label>
+                  Read timeout
+                  <input name="readTimeout" type="number" min="100" step="100" value="1000">
+                </label>
+                <label>
+                  Preview FPS
+                  <input name="previewFps" type="number" min="1" step="1" value="8">
+                </label>
+                <label>
+                  Preview width
+                  <input name="previewWidth" type="number" min="0" step="1" value="960">
+                </label>
+                <label>
+                  JPEG quality
+                  <input name="previewQuality" type="number" min="1" max="31" step="1" value="6">
+                </label>
+                <label class="checkbox">
+                  <input name="noIframe" type="checkbox">
+                  No initial I-frame request
+                </label>
+                <label class="checkbox">
+                  <input name="noWaitKeyframe" type="checkbox">
+                  Do not wait for clean keyframe
+                </label>
+                <label class="checkbox">
+                  <input name="checkBuffer" type="checkbox">
+                  Check PPCS buffer
+                </label>
+                <label class="checkbox">
+                  <input name="getDatetime" type="checkbox">
+                  Get datetime
+                </label>
+                <label class="checkbox">
+                  <input name="syncTimeNow" type="checkbox">
+                  Sync time now
+                </label>
+                <label class="checkbox">
+                  <input name="previewTimeWatch" type="checkbox">
+                  Auto-fix camera time during preview
+                </label>
+                <label class="full">
+                  Extra set_parms
+                  <textarea name="extraParams" rows="4" placeholder="example: night_vision=1&#10;example: brightness=2"></textarea>
+                </label>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section id="recordingsWorkspace" class="workspace">
+          <div class="workspace-header">
+            <div>
+              <p class="workspace-kicker">Recordings</p>
+              <h3>Media browser and day-based archive management</h3>
+            </div>
+          </div>
+
+          <section id="sdPanel" class="panel recordings-panel">
+            <div class="panel-head">
+              <div>
+                <h2>Recordings Browser</h2>
+                <p class="panel-subtitle">Opening this workspace pauses preview and keeps retrying until the camera is free.</p>
+              </div>
+            </div>
+            <div id="sdStatus" class="sd-status compact-status">Loading recording dates with footage.</div>
+            <div id="recordingTransferProgress" class="recording-transfer-progress" hidden aria-live="polite"></div>
+
+            <div class="recordings-layout">
+              <aside class="recordings-sidebar">
+                <div class="sidebar-section">
+                  <div class="sd-subhead">Date Navigator</div>
+                  <label>
+                    Year
+                    <input id="sdYear" type="number" min="2000" step="1">
+                  </label>
+                  <label>
+                    Fast day search
+                    <input id="sdDate" type="text" placeholder="YYYY-MM-DD">
+                  </label>
+                  <div class="sidebar-actions">
+                    <button id="sdDaysBtn" class="secondary" type="button">Reload date list</button>
+                    <button id="recordingOpenDayBtn" class="primary" type="button">Open day</button>
+                  </div>
+                  <div id="sdDays" class="sd-list day-list">Empty.</div>
+                </div>
+
+                <div class="sidebar-section">
+                  <div class="sd-subhead">Camera actions</div>
+                  <div class="sidebar-actions">
+                    <button id="sdFilesBtn" class="primary" type="button">Refresh recordings</button>
+                    <button id="sdStatusBtn" class="secondary" type="button">SD status</button>
+                    <button id="recordingDownloadAllBtn" class="secondary" type="button">Download all</button>
+                    <button id="recordingDeleteAllBtn" class="danger" type="button">Delete all</button>
+                  </div>
+                  <label>
+                    Download format
+                    <select id="recordingDownloadFormat">
+                      <option value="original" selected>Fast original MP4</option>
+                      <option value="mp4">Converted MP4</option>
+                      <option value="raw">Fast raw HEVC</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="sidebar-section">
+                  <div class="sd-subhead">Sort and filter</div>
+                  <label>
+                    Sort
+                    <select id="recordingSort">
+                      <option value="newest" selected>Newest first</option>
+                      <option value="oldest">Oldest first</option>
+                      <option value="duration_desc">Longest first</option>
+                      <option value="duration_asc">Shortest first</option>
+                    </select>
+                  </label>
+                  <label>
+                    Specific time
+                    <input id="recordingTimeFilter" type="text" placeholder="HH or HH:MM">
+                  </label>
+                  <label>
+                    Thumbnail size
+                    <input id="recordingThumbSize" type="range" min="150" max="320" step="10" value="210">
+                  </label>
+                </div>
+              </aside>
+
+              <div class="recordings-main">
+                <div class="recording-results-head">
+                  <div>
+                    <div class="sd-subhead">Results</div>
+                    <h3 id="recordingsHeading">Videos by date</h3>
+                  </div>
+                  <div class="recording-results-actions">
+                    <div class="segmented-control" role="tablist" aria-label="Recordings mode">
+                      <button id="recordingsModeDayBtn" class="segment-btn" data-recordings-mode="day" type="button">Selected day</button>
+                      <button id="recordingsModeBrowseBtn" class="segment-btn is-active" data-recordings-mode="browse" type="button">Browse by dates</button>
+                    </div>
+                    <button id="recordingViewToggleBtn" class="secondary" type="button">List view</button>
+                  </div>
+                </div>
+                <div id="sdFiles" class="sd-list recordings-list">Empty.</div>
+                <div class="recording-pagination">
+                  <button id="recordingPrevBtn" class="secondary" type="button">Previous videos</button>
+                  <div id="recordingPageInfo" class="recording-page-info">Page 1</div>
+                  <button id="recordingNextBtn" class="secondary" type="button">Next videos</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="diagnosticsWorkspace" class="workspace">
+          <div class="workspace-header">
+            <div>
+              <p class="workspace-kicker">Diagnostics</p>
+              <h3>Metrics, live logs, and technical camera checks</h3>
+            </div>
+          </div>
+
+          <div class="diagnostics-grid">
+            <section class="panel current-values-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Applied Values</h2>
+                  <p class="panel-subtitle">Live applied values from the camera for audit and troubleshooting.</p>
+                </div>
+              </div>
+              <div id="configSummary" class="config-summary">
+                <div class="config-summary-empty">Waiting for camera configuration.</div>
+              </div>
+            </section>
+
+            <section id="metricsPanel" class="panel metrics-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Metrics</h2>
+                  <p class="panel-subtitle">Stream and buffering counters from the active preview pipeline.</p>
+                </div>
+              </div>
+              <div class="metrics">
+                <div><span>Input bytes</span><strong id="inputBytes">0</strong></div>
+                <div><span>Output bytes</span><strong id="outputBytes">0</strong></div>
+                <div><span>Frames</span><strong id="frames">0</strong></div>
+                <div><span>Missing</span><strong id="missing">0</strong></div>
+                <div><span>Drop rate</span><strong id="dropRate">0%</strong></div>
+                <div><span>Max gap</span><strong id="maxGap">0</strong></div>
+                <div><span>Waiting keyframe</span><strong id="waitingKeyframe">0</strong></div>
+                <div><span>Config prepended</span><strong id="prependedConfig">0</strong></div>
+              </div>
+            </section>
+
+            <section class="panel diagnostics-tools">
+              <div class="panel-head">
+                <div>
+                  <h2>Technical Controls</h2>
+                  <p class="panel-subtitle">Low-frequency camera checks stay here so they do not clutter the main overview.</p>
+                </div>
+              </div>
+              <div class="panel-actions">
+                <button id="diagnosticsSdStatusBtn" class="secondary" type="button">SD status</button>
+                <button id="diagnosticsReloadDatesBtn" class="secondary" type="button">Reload dates</button>
+                <button id="clearLogsBtn" class="secondary" type="button">Clear log view</button>
+              </div>
+            </section>
+
+            <section id="logPanel" class="panel log-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Camera Logs</h2>
+                  <p class="panel-subtitle">Search live logs, or use the preset to focus on camera operations.</p>
+                </div>
+              </div>
+              <div class="log-toolbar">
+                <input id="logFilterInput" type="text" placeholder="Search logs">
+                <button id="logPresetBtn" class="secondary" type="button">Camera operations</button>
+              </div>
+              <pre id="logBox" class="log-box"></pre>
+            </section>
+          </div>
+        </section>
+
+        <section id="aboutWorkspace" class="workspace">
+          <div class="workspace-header">
+            <div>
+              <p class="workspace-kicker">About</p>
+              <h3>Project information, capabilities, and supported cameras</h3>
+            </div>
+          </div>
+
+          <div class="overview-columns">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>What this is</h2>
+                  <p class="panel-subtitle">A local Node.js dashboard for HomeEye / Shix / V720-style cameras, built to control live preview, recordings, setup, and recovery from one shell.</p>
+                </div>
+              </div>
+              <div class="about-copy">
+                <p>This project bridges the camera's native protocol with a browser UI so you can inspect live state, apply settings, browse recordings, and handle camera-busy retries without leaving the dashboard.</p>
+                <p><a class="about-link" href="https://github.com/your-username/your-repo" target="_blank" rel="noreferrer">GitHub repository placeholder</a></p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Main functionality</h2>
+                  <p class="panel-subtitle">The dashboard focuses on camera operations that matter day to day.</p>
+                </div>
+              </div>
+              <ul class="about-list">
+                <li>Live preview start and stop control.</li>
+                <li>First-run setup and time-health checks.</li>
+                <li>Applied vs pending configuration comparison and apply flow.</li>
+                <li>Recordings browser with date navigation, playback, download, and delete.</li>
+                <li>Bulk recordings actions and per-file actions.</li>
+                <li>Diagnostics for metrics, logs, and camera status.</li>
+                <li>Global busy indicator for camera operations.</li>
+              </ul>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Supported cameras</h2>
+                <p class="panel-subtitle">This dashboard targets the camera family exposed by the bundled HomeEye / Shix IPC protocol and the decompiled app assets.</p>
+              </div>
+            </div>
+            <div class="supported-grid">
+              <div class="supported-card">
+                <strong>HomeEye / Shix IPC</strong>
+                <span>Primary protocol family used by this project.</span>
+              </div>
+              <div class="supported-card">
+                <strong>V720-style cameras</strong>
+                <span>Devices using the same native SD, preview, and control behavior.</span>
+              </div>
+              <div class="supported-card">
+                <strong>JX20130716-class devices</strong>
+                <span>Compatible native camera stack as bundled in the current bridge.</span>
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="recordingModal" class="recording-modal" aria-hidden="true">
+    <div class="recording-modal-backdrop" data-recording-close></div>
+    <section class="recording-modal-card" role="dialog" aria-modal="true" aria-labelledby="recordingModalTitle">
+      <div class="recording-modal-head">
+        <div>
+          <p class="eyebrow">Recording playback</p>
+          <h2 id="recordingModalTitle">Select a recording</h2>
+          <div id="recordingPlayerStatus" class="recording-modal-status">Ready.</div>
+        </div>
+        <button id="recordingCloseBtn" class="icon-button" type="button" aria-label="Close recording player" data-recording-close>×</button>
+      </div>
+      <video id="recordingPlayer" class="recording-player" controls preload="metadata"></video>
+      <div class="recording-modal-actions">
+        <button id="recordingDownloadBtn" class="secondary" type="button">Download</button>
+        <button id="recordingNextModalBtn" class="primary" type="button">Next</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Copy this file to setup/camera.conf and replace every example value.
+CAMERA_AP_PREFIX: AYSA-
+CAMERA_DID: AYSA-YOUR-CAMERA-DID
+CAMERA_USER: admin
+CAMERA_PASSWORD: 6666
+CAMERA_MAC: 00:11:22:33:44:55
+CAMERA_TIMEZONE: America/Toronto
+
+# Use a 2.4 GHz Wi-Fi network. The encryption code is firmware-specific.
+TARGET_SSID: YOUR-2.4GHZ-WIFI
+TARGET_PASSWORD: YOUR-WIFI-PASSWORD
+TARGET_ENCRYPTION: 0
+TARGET_SUBNET_PREFIX: 192.168.1
+TARGET_SCAN_START: 2
+TARGET_SCAN_END: 254
+
+# Set NTP_SWITCH to 0 if the camera cannot reach this server.
+NTP_SWITCH: 1
+NTP_SERVER: 192.168.1.1
