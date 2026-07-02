@@ -21,6 +21,25 @@ current setup, see [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
 > SHIX, V720, or camera-vendor product. Protocol and firmware differences can
 > make nominally similar cameras incompatible.
 
+## Screenshots
+
+These images render in the repository README, which is what GitHub surfaces on
+the repo page.
+
+<p align="center">
+  <img src="screenshots/87d4b225-d6c2-4b94-9ae6-a7a5db78d024.jpg" alt="Camera Hacklab screenshot 1" width="48%" />
+  <img src="screenshots/1461c2e3-23d6-453f-8feb-8ff160b5022e.jpg" alt="Camera Hacklab screenshot 2" width="48%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/72d87041-61c6-4698-b87a-63492fca9ded.jpg" alt="Camera Hacklab screenshot 3" width="48%" />
+  <img src="screenshots/19c74573-558d-4d91-9337-fa4e5b535861.jpg" alt="Camera Hacklab screenshot 4" width="48%" />
+</p>
+
+<p align="center">
+  <img src="screenshots/af2783ba-febe-4084-8949-93d8856b5a6a.jpg" alt="Camera Hacklab screenshot 5" width="72%" />
+</p>
+
 ## Main Features
 
 - Live HEVC camera stream converted to an MJPEG browser preview.
